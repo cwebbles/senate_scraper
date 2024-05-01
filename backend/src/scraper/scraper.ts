@@ -1,10 +1,11 @@
 import puppeteer from 'puppeteer';
 import fs, { link } from 'fs';
+import Senator from './src/model/Senator';
 
 const ALL_LINKS = 'links.json';
 const VOTE_LINKS = 'voteLinks.json';
 const VOTE_PHRASE = 'roll_call_votes';
-
+const TABLE_CLASS = '.newspaperDisplay_3column';
 
 async function scrapeWebsite(url: string) {
     console.log('Scraping Website...')
@@ -31,11 +32,17 @@ async function scrapeWebsite(url: string) {
 
     for (const link of voteLinks) {
         await page.goto(link);
-        let votesPerSenator = await page.$eval('.newspaperDisplay_3column', table => table.innerHTML);
+        let votesPerSenator = await page.$eval(TABLE_CLASS, table => table.innerHTML);
 
-        votesPerSenator = votesPerSenator.replace(/<[^>]*>/g, '');
+        votesPerSenator = votesPerSenator.replace(/<[^>]*>/g, '').trim();
 
-        console.log(votesPerSenator);
+        const votesArray = votesPerSenator.split('\n');
+
+        const senators = votesArray.map(senator => {
+            return new Senator(senator);
+        })
+
+        console.log(senators);
 
         fs.appendFileSync('votes.txt', votesPerSenator);
     }
